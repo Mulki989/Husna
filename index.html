@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Lomba Benar-Salah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{--blue:#2f7de1;--red:#e23b3b;--green:#2fb35a;--orange:#f28c28;--ink:#1f2a44;--card:#fffffff2}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Baloo 2',system-ui,sans-serif;color:var(--ink);background:#9fd8ff;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;z-index:10;pointer-events:none}
+.screen.on{display:flex}
+.screen.bottom{align-items:flex-end}
+.card{pointer-events:auto;background:var(--card);border-radius:24px;padding:18px 20px;max-width:520px;width:100%;box-shadow:0 10px 30px #0003;max-height:92vh;overflow:auto;touch-action:pan-y}
+.screen.bottom .card{max-height:56vh}
+h1{margin:0 0 4px;font-size:32px;text-align:center;line-height:1.1}
+h2{margin:0 0 8px;font-size:24px;text-align:center;line-height:1.15}
+.btn{display:block;width:100%;border:0;border-radius:16px;padding:11px 14px;font:inherit;font-size:20px;font-weight:700;color:#fff;background:var(--blue);margin:8px 0;cursor:pointer;box-shadow:0 4px 0 #0002}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.gray{background:#8a94a8}.btn.orange{background:var(--orange)}.btn.purple{background:#8a4fd8}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.role{border:4px solid transparent;border-radius:20px;padding:12px 8px;text-align:center;font-size:20px;font-weight:800;color:#fff;cursor:pointer;margin:6px 0 10px}
+.role.sel{border-color:#ffd43b;transform:scale(1.04);box-shadow:0 0 0 3px #fff8}
+.role .em{font-size:44px;display:block;line-height:1.2}
+input{width:100%;font:inherit;font-size:20px;padding:9px 14px;border-radius:14px;border:3px solid #c9d3e6;margin:4px 0 8px;background:#fff;color:var(--ink)}
+label{font-weight:700;font-size:16px;display:block;margin-top:4px}
+.err{color:var(--red);font-weight:700;min-height:24px;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:4px 0 8px}
+.chip{border:3px solid #c9d3e6;background:#fff;border-radius:14px;padding:5px 12px;font:inherit;font-weight:700;font-size:17px;cursor:pointer;color:var(--ink)}
+.chip.sel{border-color:var(--blue);background:#e3efff}
+.chip:disabled{opacity:.4;cursor:default}
+.chip.sel:disabled{opacity:1}
+.muted{color:#5b6680;text-align:center;font-size:16px;margin:4px 0}
+.code{font-size:46px;font-weight:800;letter-spacing:10px;text-align:center;color:var(--blue);line-height:1.1}
+.players{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0}
+.ptag{padding:4px 12px;border-radius:12px;color:#fff;font-weight:800}
+.ptag.wait{background:#c9d3e6;color:#5b6680}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.item{background:#fff;border:3px solid #dfe5f0;border-radius:16px;padding:8px;text-align:center;cursor:pointer}
+.item .ic{font-size:36px;line-height:1.2}.item .nm{font-weight:800;font-size:15px;line-height:1.1;min-height:34px}.item .pr{font-size:14px;color:#5b6680}
+.item .btn{font-size:16px;padding:6px;margin:6px 0 0}
+.item.eq{border-color:var(--green);background:#eafbef}
+.wallet{text-align:center;font-weight:800;font-size:19px;margin-bottom:6px}
+.res{display:flex;justify-content:space-between;align-items:center;border-radius:14px;padding:8px 14px;margin:6px 0;color:#fff;font-weight:800;font-size:18px}
+.note{background:#fff6d6;border-radius:14px;padding:8px 12px;margin:8px 0;font-weight:700;text-align:center}
+#hud{position:fixed;top:0;left:0;right:0;display:none;z-index:5;pointer-events:none;padding:10px;text-align:center}
+#hud.on{display:block}
+#qbox{display:inline-block;background:#fffffff2;border-radius:20px;padding:6px 20px 8px;box-shadow:0 6px 20px #0003;max-width:96vw}
+#qtext{font-size:clamp(28px,7vw,52px);font-weight:800;line-height:1.15}
+#qtext.long{font-size:clamp(20px,4.6vw,36px)}
+#qsub{font-size:17px;color:#5b6680}
+#lockbar{width:220px;max-width:60vw;height:14px;border-radius:7px;background:#dfe5f0;margin:6px auto 2px;overflow:hidden;display:none}
+#lockfill{height:100%;width:0;background:#ffc21a}
+#stats{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:8px;font-weight:800;font-size:17px}
+.stat{background:#fffffff2;border-radius:14px;padding:3px 12px}
+#big{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:6;pointer-events:none;font-size:clamp(56px,16vw,130px);font-weight:800;color:#fff;text-shadow:0 5px 0 #0005,0 0 24px #0006;text-align:center;line-height:1}
+#big.on{display:flex}
+#big small{display:block;font-size:.3em;margin-top:12px;color:#fff}
+#joy{position:fixed;left:22px;bottom:22px;width:140px;height:140px;border-radius:50%;background:#ffffff55;border:3px solid #fffa;z-index:7;display:none;touch-action:none}
+#knob{position:absolute;left:42px;top:42px;width:50px;height:50px;border-radius:50%;background:#fff;box-shadow:0 3px 8px #0004;pointer-events:none}
+#jumpBtn{position:fixed;right:26px;bottom:38px;width:96px;height:96px;border-radius:50%;background:#ffd43bdd;border:3px solid #fff;z-index:7;display:none;font:inherit;font-size:20px;font-weight:800;color:var(--ink);touch-action:none}
+body.ctrl-on #joy,body.ctrl-on #jumpBtn{display:block}
+#topbar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:10px}
+.ibtn{width:46px;height:46px;border-radius:50%;border:0;background:#fffe;font-size:22px;box-shadow:0 3px 8px #0003;cursor:pointer}
+#toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#1f2a44ee;color:#fff;padding:10px 18px;border-radius:14px;z-index:30;display:none;font-weight:700;max-width:90vw;text-align:center}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="topbar">
+  <button class="ibtn" id="btnMusic" title="Musik">🎵</button>
+  <button class="ibtn" id="btnExit" title="Keluar" style="display:none">🏠</button>
+</div>
+
+<div id="hud">
+  <div id="qbox"><div id="qtext"></div><div id="qsub"></div><div id="lockbar"><div id="lockfill"></div></div></div>
+  <div id="stats"><div class="stat" id="stStage"></div><div class="stat" id="stMe"></div><div class="stat" id="stOpp"></div></div>
+</div>
+<div id="big"></div>
+<div id="joy"><div id="knob"></div></div>
+<button id="jumpBtn">Lompat</button>
+<div id="toast"></div>
+
+<!-- Masuk -->
+<div class="screen on" id="sLogin"><div class="card">
+  <h1>Lomba Benar-Salah</h1>
+  <p class="muted">Siapa yang main?</p>
+  <div class="row">
+    <div class="role" id="roleParent" style="background:var(--blue)"><span class="em">🧑</span>Orang Tua</div>
+    <div class="role" id="roleChild" style="background:var(--red)"><span class="em">🧒</span>Anak</div>
+  </div>
+  <label for="inName">Nama panggilan</label>
+  <input id="inName" maxlength="16" placeholder="contoh: Adik Raka" autocomplete="off">
+  <label for="inKode">Kode keluarga</label>
+  <input id="inKode" maxlength="20" placeholder="tanya orang tua / guru" autocomplete="off">
+  <div class="err" id="loginErr"></div>
+  <button class="btn green" id="btnLogin">Masuk</button>
+</div></div>
+
+<!-- Menu -->
+<div class="screen bottom" id="sMenu"><div class="card">
+  <h2 id="menuHello"></h2>
+  <div class="wallet" id="menuWallet"></div>
+  <button class="btn green" id="btnSolo">🎯 Main Solo</button>
+  <div class="row">
+    <button class="btn" id="btnCreate">➕ Buat Room</button>
+    <button class="btn purple" id="btnJoinMenu">🔑 Gabung</button>
+  </div>
+  <div class="row" id="kidRow">
+    <button class="btn orange" id="btnShop">🛒 Toko</button>
+    <button class="btn orange" id="btnWardrobe">👕 Lemari</button>
+  </div>
+  <button class="btn gray" id="btnLogout">Ganti Pemain</button>
+</div></div>
+
+<!-- Gabung -->
+<div class="screen bottom" id="sJoin"><div class="card">
+  <h2>🔑 Gabung Room</h2>
+  <p class="muted">Masukkan 4 angka dari layar lawan</p>
+  <input id="inRoom" inputmode="numeric" maxlength="4" placeholder="1234" style="text-align:center;font-size:36px;letter-spacing:10px">
+  <div class="err" id="joinErr"></div>
+  <button class="btn green" id="btnJoin">Gabung</button>
+  <button class="btn gray" id="btnJoinBack">Kembali</button>
+</div></div>
+
+<!-- Lobi -->
+<div class="screen bottom" id="sLobby"><div class="card">
+  <h2 id="lobbyTitle"></h2>
+  <div class="code" id="lobbyCode"></div>
+  <p class="muted" id="lobbyCodeHint">Bagikan kode ini ke lawan</p>
+  <div class="players" id="lobbyPlayers"></div>
+  <label>Level</label>
+  <div class="chips" id="chipLevel"></div>
+  <p class="muted" id="levelInfo"></p>
+  <label>Tema arena</label>
+  <div class="chips" id="chipTheme"></div>
+  <div id="hcWrap"><label>Penyeimbang: start Orang Tua lebih jauh</label><div class="chips" id="chipHc"></div></div>
+  <p class="muted" id="lobbyInfo"></p>
+  <button class="btn green" id="btnStart">Mulai!</button>
+  <button class="btn gray" id="btnLobbyBack">Kembali</button>
+</div></div>
+
+<!-- Hasil -->
+<div class="screen bottom" id="sResult"><div class="card">
+  <h2 id="resTitle"></h2>
+  <div id="resBody"></div>
+  <button class="btn green" id="btnAgain">Main Lagi</button>
+  <button class="btn gray" id="btnResMenu">Menu</button>
+</div></div>
+
+<!-- Toko -->
+<div class="screen bottom" id="sShop"><div class="card">
+  <h2>🛒 Toko Kostum</h2>
+  <div class="wallet" id="shopWallet"></div>
+  <div class="grid" id="shopGrid"></div>
+  <button class="btn gray" id="btnShopBack">Kembali</button>
+</div></div>
+
+<!-- Lemari -->
+<div class="screen bottom" id="sWardrobe"><div class="card">
+  <h2>👕 Lemari</h2>
+  <p class="muted">Ketuk barang untuk memakai atau melepas</p>
+  <div class="grid" id="wardGrid"></div>
+  <button class="btn gray" id="btnWardBack">Kembali</button>
+</div></div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+/* =========================================================
+   PENGATURAN — ubah bagian ini saja
+   ========================================================= */
+const CONFIG = {
+  // Tempel URL Web App Apps Script di antara tanda kutip.
+  // Dibiarkan kosong = mode offline (data hanya di perangkat ini).
+  APPS_SCRIPT_URL: '',
+  ROOM_PREFIX: 'lomba-benar-salah-sd-v1-',
+  STAGES: 10,          // jumlah stage (soal) per level
+  NAIK_LEVEL_MIN: 7,   // minimal jawaban benar untuk membuka level berikutnya
+  POIN_BENAR: 1,
+  POIN_SALAH: -0.5,
+  LOCK_TIME: 1.0,      // detik berdiri di kotak sampai jawaban terkunci
+  SPEED: 6.5,          // kecepatan lari karakter
+};
+
+const HANDICAP = { tanpa: 0, kecil: 2, sedang: 4, besar: 6 };
+const HC_LABEL = { tanpa: 'Tanpa', kecil: 'Kecil', sedang: 'Sedang', besar: 'Besar' };
+const COLORS = { parent: 0x2f7de1, parent2: 0x6aa9ff, child: 0xe23b3b, child2: 0xf28c28 };
+const LEVELS = [
+  { n: 1, title: 'Penjumlahan & pengurangan sampai 20', max: 20 },
+  { n: 2, title: 'Penjumlahan & pengurangan sampai 40', max: 40 },
+  { n: 3, title: 'Penjumlahan & pengurangan sampai 60', max: 60 },
+  { n: 4, title: 'Penjumlahan & pengurangan sampai 100', max: 100 },
+  { n: 5, title: 'Hitungan belanja (ribuan rupiah)', shop: true },
+];
+const THEMES = { taman: '🌳 Taman', pantai: '🏖️ Pantai', angkasa: '🚀 Luar Angkasa' };
+const SHOP = [
+  { id: 'mustache', slot: 'wajah', name: 'Kumis Lucu', price: 5, icon: '🥸' },
+  { id: 'glasses', slot: 'wajah', name: 'Kacamata Hitam', price: 8, icon: '🕶️' },
+  { id: 'cap', slot: 'kepala', name: 'Topi Baseball', price: 10, icon: '🧢' },
+  { id: 'crown', slot: 'kepala', name: 'Mahkota', price: 25, icon: '👑' },
+  { id: 'helmet', slot: 'kepala', name: 'Helm Astronot', price: 30, icon: '👨‍🚀' },
+  { id: 'stripes', slot: 'baju', name: 'Baju Garis', price: 15, icon: '👕' },
+  { id: 'starshirt', slot: 'baju', name: 'Baju Bintang', price: 20, icon: '⭐' },
+  { id: 'bolt', slot: 'baju', name: 'Baju Petir', price: 20, icon: '⚡' },
+  { id: 'backpack', slot: 'punggung', name: 'Tas Punggung', price: 30, icon: '🎒' },
+  { id: 'cape', slot: 'punggung', name: 'Jubah', price: 35, icon: '🦸' },
+  { id: 'wings', slot: 'punggung', name: 'Sayap', price: 45, icon: '🕊️' },
+  { id: 'trailstar', slot: 'jejak', name: 'Jejak Bintang', price: 40, icon: '✨' },
+  { id: 'trailrainbow', slot: 'jejak', name: 'Jejak Pelangi', price: 40, icon: '🌈' },
+  { id: 'cat', slot: 'peliharaan', name: 'Kucing Kotak', price: 60, icon: '🐱' },
+  { id: 'dog', slot: 'peliharaan', name: 'Anjing Kotak', price: 80, icon: '🐶' },
+];
+const ITEM = Object.fromEntries(SHOP.map(i => [i.id, i]));
+
+/* ===================== Utilitas ===================== */
+const $ = id => document.getElementById(id);
+const fmt = n => (Math.round(n * 2) / 2).toLocaleString('id-ID');
+const fmtDelta = d => (d > 0 ? '+' : '−') + fmt(Math.abs(d));
+const css = hex => '#' + hex.toString(16).padStart(6, '0');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const lerpAngle = (a, b, t) => { const d = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return a + d * t; };
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+let toastTimer;
+function toast(m, ms = 2600) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = 'none', ms); }
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
+let bigTimer;
+function bigShow(main, sub = '', color = '#fff', ms = 0) {
+  const b = $('big'); b.innerHTML = esc(main) + (sub ? `<small>${esc(sub)}</small>` : '');
+  b.style.color = color; b.classList.add('on'); clearTimeout(bigTimer);
+  if (ms) bigTimer = setTimeout(() => b.classList.remove('on'), ms);
+}
+function bigHide() { clearTimeout(bigTimer); $('big').classList.remove('on'); }
+
+/* ===================== State ===================== */
+const S = { profile: null, pickRole: null, mode: 'login', theme: 'taman', level: 1, handicap: 'sedang', game: null, showT: 0, myColor: COLORS.child, oppColor: null };
+const net = { peer: null, conn: null, isHost: false, code: '', remote: null };
+const isRace = () => !!(net.conn && net.remote);
+
+/* ===================== Data: lokal + Google Sheet ===================== */
+const storeKey = p => 'lbs_' + p.kode + '_' + p.name.toLowerCase();
+function saveLocal() {
+  const p = S.profile; if (!p) return;
+  try {
+    localStorage.setItem(storeKey(p), JSON.stringify({ level: p.level, wallet: p.wallet, owned: p.owned, equipped: p.equipped }));
+    localStorage.setItem('lbs_last', JSON.stringify({ name: p.name, kode: p.kode, role: p.role }));
+  } catch (e) { }
+}
+function loadLocal(p) { try { const d = JSON.parse(localStorage.getItem(storeKey(p)) || 'null'); if (d) Object.assign(p, d); } catch (e) { } }
+async function api(action, data) {
+  if (!CONFIG.APPS_SCRIPT_URL) return null;
+  try {
+    const r = await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) });
+    return await r.json();
+  } catch (e) { console.warn('API gagal', e); return null; }
+}
+function savePlayer() {
+  saveLocal();
+  const p = S.profile; if (!p || p.role !== 'child') return;
+  const worn = Object.values(p.equipped);
+  api('simpanPemain', { kode: p.kode, nama: p.name, peran: 'Anak', level: p.level, poin: p.wallet, koleksi: p.owned.map(id => ({ barang: id, dipakai: worn.includes(id) })) });
+}
+
+/* ===================== Generator soal ===================== */
+const BELANJA = [['pensil', 1000, 3000], ['buku', 3000, 8000], ['penghapus', 500, 2000], ['permen', 500, 1500], ['roti', 2000, 6000], ['susu', 3000, 7000], ['penggaris', 1500, 4000], ['jus', 2500, 6000]];
+const rp = n => 'Rp' + n.toLocaleString('id-ID');
+const harga = it => rnd(it[1] / 500, it[2] / 500) * 500;
+const cap1 = s => s[0].toUpperCase() + s.slice(1);
+function genShop() {
+  const truth = Math.random() < 0.5;
+  const off = () => (Math.random() < 0.5 ? 500 : 1000) * (Math.random() < 0.5 ? -1 : 1);
+  if (Math.random() < 0.5) {
+    const [a, b] = shuffle(BELANJA.slice()).slice(0, 2);
+    const pa = harga(a), pb = harga(b), res = pa + pb;
+    let shown = res; if (!truth) { do { shown = res + off(); } while (shown <= 0); }
+    return { text: `${cap1(a[0])} ${rp(pa)} + ${b[0]} ${rp(pb)} = ${rp(shown)}`, ans: truth ? 'BENAR' : 'SALAH' };
+  }
+  const it = BELANJA[rnd(0, BELANJA.length - 1)];
+  const p = harga(it); const uang = [5000, 10000, 20000].find(u => u > p + 500) || 20000;
+  const res = uang - p;
+  let shown = res; if (!truth) { do { shown = res + off(); } while (shown < 0 || shown === res); }
+  return { text: `Bayar ${rp(uang)}, beli ${it[0]} ${rp(p)}. Kembalian ${rp(shown)}`, ans: truth ? 'BENAR' : 'SALAH' };
+}
+function genQuestion(level) {
+  const L = LEVELS[level - 1];
+  if (L.shop) return genShop();
+  const max = L.max, lo = Math.max(3, Math.floor(max * 0.3));
+  let a, b, op, res;
+  if (Math.random() < 0.5) { op = '+'; res = rnd(lo, max); a = rnd(1, res - 1); b = res - a; }
+  else { op = '−'; a = rnd(lo, max); b = rnd(1, a - 1); res = a - b; }
+  const truth = Math.random() < 0.5;
+  let shown = res;
+  if (!truth) {
+    const spread = max <= 20 ? 2 : max <= 60 ? 3 : 5;
+    let d;
+    do {
+      d = rnd(1, spread) * (Math.random() < 0.5 ? -1 : 1);
+      if (max >= 40 && Math.random() < 0.3) d = 10 * (Math.random() < 0.5 ? -1 : 1);
+    } while (res + d < 0 || d === 0);
+    shown = res + d;
+  }
+  return { text: `${a} ${op} ${b} = ${shown}`, ans: truth ? 'BENAR' : 'SALAH' };
+}
+async function makeQuestions(level) {
+  let custom = [];
+  const res = await api('soal', { kode: S.profile.kode, level });
+  if (res && res.ok && Array.isArray(res.soal)) custom = shuffle(res.soal.map(s => ({ text: String(s.teks), ans: s.jawaban === 'BENAR' ? 'BENAR' : 'SALAH' })));
+  const qs = custom.slice(0, CONFIG.STAGES);
+  const seen = new Set(qs.map(q => q.text));
+  let guard = 0;
+  while (qs.length < CONFIG.STAGES && guard++ < 500) { const q = genQuestion(level); if (!seen.has(q.text)) { seen.add(q.text); qs.push(q); } }
+  return shuffle(qs);
+}
+
+/* ===================== Dunia 3D ===================== */
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
+camera.position.set(0, 2.6, 10.5);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x6a9a4a, 1.0); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(10, 22, 12); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, near: 1, far: 70 });
+scene.add(sun);
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = camera.aspect < 1 ? 75 : 55; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+const M = c => new THREE.MeshLambertMaterial({ color: c });
+function mesh(w, h, d, mat, x = 0, y = 0, z = 0) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; return m; }
+function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function textTexture(text, bg, fg = '#fff', w = 512, h = 256, size = 120) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  g.fillStyle = bg; roundRect(g, 4, 4, w - 8, h - 8, 40); g.fill();
+  g.lineWidth = 10; g.strokeStyle = 'rgba(255,255,255,.8)'; g.stroke();
+  g.fillStyle = fg; g.font = `800 ${size}px "Baloo 2", system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, w / 2, h / 2 + size * 0.06);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), M(0x7ccf6b));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const startLine = new THREE.Mesh(new THREE.PlaneGeometry(14, 0.35), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }));
+startLine.rotation.x = -Math.PI / 2; startLine.position.set(0, 0.02, 4.6); scene.add(startLine);
+const decor = new THREE.Group(); scene.add(decor);
+
+const PADS = { BENAR: { x: -4.5, z: -6, color: 0x2fb35a, label: '✔ BENAR' }, SALAH: { x: 4.5, z: -6, color: 0xe23b3b, label: '✘ SALAH' } };
+const padObjs = {};
+
+function okSpot(x, z) { return !(Math.abs(x) < 11 && z > -13 && z < 24); }
+function tree(x, z, s) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s);
+  g.add(mesh(0.6, 2, 0.6, M(0x8b5a2b), 0, 1, 0));
+  g.add(mesh(2.4, 1.8, 2.4, M(0x3fa34d), 0, 2.7, 0));
+  g.add(mesh(1.6, 1.2, 1.6, M(0x52c060), 0, 4.1, 0));
+  decor.add(g);
+}
+function palm(x, z, s) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); g.rotation.y = x * 0.7;
+  const trunk = M(0xa8743e);
+  for (let i = 0; i < 6; i++) g.add(mesh(0.5, 0.75, 0.5, trunk, i * 0.12, 0.38 + i * 0.72, 0));
+  const leaf = M(0x2f9e44);
+  for (let i = 0; i < 5; i++) { const p = new THREE.Group(); p.position.set(0.6, 4.4, 0); p.rotation.y = i * Math.PI * 2 / 5; const l = mesh(2.6, 0.12, 0.7, leaf, 1.3, 0, 0); l.rotation.z = -0.35; p.add(l); g.add(p); }
+  decor.add(g);
+}
+function buildTheme(name) {
+  decor.clear();
+  const R = rng(name === 'taman' ? 7 : name === 'pantai' ? 11 : 23);
+  const spots = (n, rmin, rmax, fn) => { let k = 0, guard = 0; while (k < n && guard++ < n * 20) { const a = R() * Math.PI * 2, d = rmin + R() * (rmax - rmin); const x = Math.cos(a) * d, z = Math.sin(a) * d; if (!okSpot(x, z)) continue; fn(x, z, k++); } };
+  if (name === 'taman') {
+    scene.background = new THREE.Color(0x9fd8ff); scene.fog = new THREE.Fog(0x9fd8ff, 35, 90);
+    ground.material.color.set(0x7ccf6b); hemi.color.set(0xffffff); hemi.groundColor.set(0x6a9a4a); hemi.intensity = 1.0; sun.intensity = 1.4;
+    spots(26, 13, 34, (x, z) => tree(x, z, 0.8 + R() * 0.6));
+    const fl = [0xff6b9a, 0xffd43b, 0xffffff, 0xb86bff];
+    spots(50, 9, 30, (x, z, i) => { decor.add(mesh(0.08, 0.4, 0.08, M(0x3a8a3a), x, 0.2, z)); decor.add(mesh(0.3, 0.3, 0.3, M(fl[i % 4]), x, 0.5, z)); });
+    for (let i = 0; i < 8; i++) { const c = new THREE.Group(); c.position.set(-40 + i * 11 + R() * 4, 18 + R() * 6, -30 - R() * 20); const w = M(0xffffff); c.add(mesh(4, 1.2, 2, w)); c.add(mesh(2.4, 1, 1.6, w, 1, 0.8, 0)); decor.add(c); }
+  } else if (name === 'pantai') {
+    scene.background = new THREE.Color(0xbfe9ff); scene.fog = new THREE.Fog(0xbfe9ff, 40, 100);
+    ground.material.color.set(0xf2dc9b); hemi.color.set(0xffffff); hemi.groundColor.set(0xd9c27a); hemi.intensity = 1.05; sun.intensity = 1.5;
+    const sea = new THREE.Mesh(new THREE.PlaneGeometry(200, 70), new THREE.MeshLambertMaterial({ color: 0x2a9fd6 }));
+    sea.rotation.x = -Math.PI / 2; sea.position.set(0, 0.03, -50); decor.add(sea);
+    const foam = new THREE.Mesh(new THREE.PlaneGeometry(200, 0.8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    foam.rotation.x = -Math.PI / 2; foam.position.set(0, 0.04, -15.2); decor.add(foam);
+    spots(18, 13, 30, (x, z) => { if (z < -14) return; palm(x, z, 0.9 + R() * 0.5); });
+    const cols = [0xe23b3b, 0xffd43b, 0x2f7de1];
+    spots(6, 12, 22, (x, z, i) => { if (z < -14) return; decor.add(mesh(0.12, 2.4, 0.12, M(0xffffff), x, 1.2, z)); const um = new THREE.Mesh(new THREE.ConeGeometry(1.7, 0.8, 8), M(cols[i % 3])); um.position.set(x, 2.6, z); um.castShadow = true; decor.add(um); });
+    spots(8, 10, 24, (x, z, i) => { if (z < -14) return; const b = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 12), M(cols[i % 3])); b.position.set(x, 0.45, z); b.castShadow = true; decor.add(b); });
+  } else {
+    scene.background = new THREE.Color(0x0b0b2b); scene.fog = new THREE.Fog(0x0b0b2b, 45, 130);
+    ground.material.color.set(0x6b6f86); hemi.color.set(0xc8d0ff); hemi.groundColor.set(0x30304a); hemi.intensity = 0.8; sun.intensity = 1.3;
+    const pts = []; for (let i = 0; i < 700; i++) { const v = new THREE.Vector3(R() - 0.5, R() * 0.9 + 0.05, R() - 0.5).normalize().multiplyScalar(150); pts.push(v.x, v.y, v.z); }
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    decor.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, fog: false })));
+    const planet = new THREE.Mesh(new THREE.SphereGeometry(9, 32, 24), new THREE.MeshLambertMaterial({ color: 0xff9f6b, fog: false }));
+    planet.position.set(-38, 26, -70); decor.add(planet);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(12, 16, 48), new THREE.MeshBasicMaterial({ color: 0xffd8a8, side: THREE.DoubleSide, transparent: true, opacity: 0.7, fog: false }));
+    ring.position.copy(planet.position); ring.rotation.set(1.2, 0.3, 0); decor.add(ring);
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(3, 24, 16), new THREE.MeshLambertMaterial({ color: 0xdde3ff, fog: false })); moon.position.set(34, 30, -60); decor.add(moon);
+    spots(22, 10, 32, (x, z) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(1 + R() * 1.4, 1.4 + R() * 1.4, 0.15, 16), M(0x55586e)); c.position.set(x, 0.05, z); c.receiveShadow = true; decor.add(c); });
+    spots(16, 13, 32, (x, z) => { const s = 0.6 + R() * 1.6; const r = mesh(s, s * 0.8, s, M(0x8a8ea8), x, s * 0.4, z); r.rotation.y = R() * 3; decor.add(r); });
+  }
+}
+function buildPads() {
+  for (const k in PADS) {
+    const p = PADS[k], g = new THREE.Group(); g.position.set(p.x, 0, p.z);
+    const top = new THREE.MeshLambertMaterial({ map: textTexture(p.label, css(p.color), '#fff', 512, 512, 118), emissive: 0x000000 });
+    const side = M(p.color);
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(5, 0.1, 5), [side, side, top, side, side, side]);
+    pad.position.y = 0.05; pad.receiveShadow = true; g.add(pad);
+    const sign = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(p.label, css(p.color), '#fff', 512, 200, 110) }));
+    sign.scale.set(3.8, 1.48, 1); sign.position.y = 4.3; g.add(sign);
+    [-1.2, 1.2].forEach(x => g.add(mesh(0.15, 3.6, 0.15, M(0xffffff), x, 1.8, -2.4)));
+    g.userData.top = top; padObjs[k] = g; scene.add(g);
+  }
+}
+function padAt(pos) { for (const k in PADS) { const p = PADS[k]; if (Math.abs(pos.x - p.x) < 2.5 && Math.abs(pos.z - p.z) < 2.5) return k; } return null; }
+
+/* ===================== Karakter blocky ===================== */
+const SKIN = 0xffd3a6;
+const shade = (hex, f) => new THREE.Color(hex).multiplyScalar(f);
+function star(g, cx, cy, ro, ri, n) { g.beginPath(); for (let i = 0; i < n * 2; i++) { const r = i % 2 ? ri : ro, a = -Math.PI / 2 + i * Math.PI / n; g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } g.closePath(); g.fill(); }
+function shirtTexture(hex, pattern) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.fillStyle = css(hex); g.fillRect(0, 0, 128, 128);
+  if (pattern === 'stripes') { g.fillStyle = 'rgba(255,255,255,.6)'; for (let y = 10; y < 128; y += 32) g.fillRect(0, y, 128, 14); }
+  if (pattern === 'starshirt') { g.fillStyle = '#ffd43b'; star(g, 64, 66, 44, 19, 5); }
+  if (pattern === 'bolt') { g.fillStyle = '#ffd43b'; g.beginPath(); g.moveTo(76, 8); g.lineTo(34, 72); g.lineTo(60, 72); g.lineTo(50, 120); g.lineTo(96, 52); g.lineTo(70, 52); g.closePath(); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const trailGeo = new THREE.BoxGeometry(0.22, 0.22, 0.22);
+const particles = [];
+function spawnTrail(ch) {
+  const color = ch.equipped.jejak === 'trailrainbow' ? new THREE.Color().setHSL((performance.now() / 700) % 1, 0.9, 0.6) : new THREE.Color(0xffd43b);
+  const m = new THREE.Mesh(trailGeo, new THREE.MeshBasicMaterial({ color, transparent: true }));
+  m.position.set(ch.g.position.x + (Math.random() - 0.5) * 0.5, 0.2 + Math.random() * 0.5, ch.g.position.z + (Math.random() - 0.5) * 0.5);
+  m.rotation.set(Math.random() * 3, Math.random() * 3, 0); scene.add(m); particles.push({ m, life: 0.9 });
+}
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i]; p.life -= dt; p.m.position.y += dt * 0.7; p.m.rotation.y += dt * 4; p.m.material.opacity = Math.max(0, p.life / 0.9);
+    if (p.life <= 0) { scene.remove(p.m); p.m.material.dispose(); particles.splice(i, 1); }
+  }
+}
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+class Pet {
+  constructor(type) {
+    this.g = new THREE.Group(); this.t = 0;
+    const c = type === 'cat' ? 0xf2a65a : 0xb07a4a, m = M(c), dk = new THREE.MeshLambertMaterial({ color: shade(c, 0.7) }), black = M(0x222222);
+    this.g.add(mesh(0.55, 0.45, 0.85, m, 0, 0.5, 0));
+    this.g.add(mesh(0.5, 0.48, 0.48, m, 0, 0.85, 0.5));
+    [-0.12, 0.12].forEach(x => this.g.add(mesh(0.08, 0.1, 0.04, black, x, 0.92, 0.75)));
+    if (type === 'cat') { [-0.15, 0.15].forEach(x => this.g.add(mesh(0.13, 0.18, 0.1, dk, x, 1.17, 0.48))); this.g.add(mesh(0.1, 0.55, 0.1, dk, 0, 0.85, -0.45)); }
+    else { [-0.29, 0.29].forEach(x => this.g.add(mesh(0.1, 0.32, 0.22, dk, x, 0.82, 0.5))); this.g.add(mesh(0.12, 0.12, 0.4, dk, 0, 0.65, -0.58)); this.g.add(mesh(0.2, 0.16, 0.18, dk, 0, 0.76, 0.8)); }
+    [[-0.18, 0.28], [0.18, 0.28], [-0.18, -0.28], [0.18, -0.28]].forEach(([x, z]) => this.g.add(mesh(0.14, 0.3, 0.14, dk, x, 0.15, z)));
+  }
+  update(dt, owner) {
+    const off = new THREE.Vector3(1.1, 0, -1.0).applyAxisAngle(Y_AXIS, owner.g.rotation.y);
+    const target = owner.g.position.clone().add(off); target.y = 0;
+    const flat = this.g.position.clone(); flat.y = 0;
+    const d = target.clone().sub(flat), dist = d.length(); this.t += dt;
+    if (dist > 0.05) { flat.lerp(target, 1 - Math.exp(-5 * dt)); this.g.rotation.y = lerpAngle(this.g.rotation.y, Math.atan2(d.x, d.z), 1 - Math.exp(-8 * dt)); }
+    this.g.position.set(flat.x, dist > 0.3 ? Math.abs(Math.sin(this.t * 12)) * 0.15 : 0, flat.z);
+  }
+}
+class Character {
+  constructor() {
+    this.g = new THREE.Group(); this.inner = new THREE.Group(); this.g.add(this.inner);
+    this.t = Math.random() * 10; this.speed = 0; this.y = 0; this.vy = 0; this.rotTarget = 0;
+    this.celebrateT = 0; this.sadT = 0; this.trailT = 0; this.equipped = {}; this.pet = null; this.cape = null; this.wings = null; this.color = 0xffffff;
+    this.legMat = M(0x333333); this.armMat = M(0xffffff); this.sideMat = M(0xffffff); this.frontMat = M(0xffffff); this.backMat = M(0xffffff);
+    const skinM = M(SKIN), black = M(0x222222);
+    const limb = (w, h, d, mat, x, y) => { const p = new THREE.Group(); p.position.set(x, y, 0); const m = mesh(w, h, d, mat, 0, -h / 2, 0); p.add(m); this.inner.add(p); return p; };
+    this.legL = limb(0.48, 0.9, 0.5, this.legMat, -0.28, 0.9); this.legR = limb(0.48, 0.9, 0.5, this.legMat, 0.28, 0.9);
+    this.bodyG = new THREE.Group(); this.bodyG.position.y = 0.9; this.inner.add(this.bodyG);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.6), [this.sideMat, this.sideMat, this.sideMat, this.sideMat, this.frontMat, this.backMat]);
+    body.position.y = 0.55; body.castShadow = true; this.bodyG.add(body);
+    this.armL = limb(0.38, 1.0, 0.42, this.armMat, -0.75, 1.95); this.armR = limb(0.38, 1.0, 0.42, this.armMat, 0.75, 1.95);
+    [this.armL, this.armR].forEach(a => a.add(mesh(0.36, 0.22, 0.4, skinM, 0, -1.08, 0)));
+    this.headG = new THREE.Group(); this.headG.position.y = 2.02; this.inner.add(this.headG);
+    this.headG.add(mesh(0.85, 0.85, 0.85, skinM, 0, 0.43, 0));
+    [-0.18, 0.18].forEach(x => this.headG.add(mesh(0.12, 0.16, 0.04, black, x, 0.5, 0.43)));
+    this.headG.add(mesh(0.34, 0.06, 0.04, black, 0, 0.27, 0.43));
+    this.hair = mesh(0.9, 0.18, 0.9, M(0x4a2c1a), 0, 0.9, 0); this.headG.add(this.hair);
+    this.accHead = new THREE.Group(); this.headG.add(this.accHead);
+    this.accBack = new THREE.Group(); this.bodyG.add(this.accBack);
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.75, 1.0, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 }));
+    this.ring.rotation.x = -Math.PI / 2; this.ring.position.y = 0.04; this.g.add(this.ring);
+    this.label = new THREE.Sprite(new THREE.SpriteMaterial({ depthTest: false, transparent: true }));
+    this.label.position.y = 3.65; this.label.scale.set(2.6, 0.8, 1); this.label.renderOrder = 10; this.label.visible = false; this.g.add(this.label);
+    scene.add(this.g);
+  }
+  setColor(hex) {
+    this.color = hex; this.sideMat.color.set(hex); this.armMat.color.set(hex);
+    this.legMat.color.copy(shade(hex, 0.55)); this.ring.material.color.set(hex); this.refreshShirt();
+  }
+  refreshShirt() {
+    const tex = shirtTexture(this.color, this.equipped.baju || null);
+    if (this.frontMat.map) this.frontMat.map.dispose();
+    [this.frontMat, this.backMat].forEach(m => { m.map = tex; m.color.set(0xffffff); m.needsUpdate = true; });
+  }
+  setLabel(text, hex) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 80; const g = c.getContext('2d');
+    g.fillStyle = css(hex); roundRect(g, 4, 4, 248, 72, 30); g.fill(); g.lineWidth = 5; g.strokeStyle = '#fff'; g.stroke();
+    g.fillStyle = '#fff'; g.font = '800 40px "Baloo 2", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(text.length > 12 ? text.slice(0, 11) + '…' : text, 128, 44);
+    if (this.label.material.map) this.label.material.map.dispose();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    this.label.material.map = t; this.label.material.needsUpdate = true; this.label.visible = true;
+  }
+  setOutfit(eq) {
+    this.equipped = { ...eq }; this.accHead.clear(); this.accBack.clear(); this.cape = null; this.wings = null;
+    const k = eq.kepala, w = eq.wajah, p = eq.punggung, A = m => this.accHead.add(m), B = m => this.accBack.add(m);
+    this.hair.visible = k !== 'helmet';
+    if (k === 'cap') { const c = M(0x22336b); A(mesh(0.94, 0.28, 0.94, c, 0, 0.99, 0)); A(mesh(0.94, 0.06, 0.45, c, 0, 0.87, 0.64)); }
+    if (k === 'crown') { const c = M(0xffcc33); A(mesh(0.96, 0.24, 0.96, c, 0, 1.02, 0)); [[-0.38, -0.38], [0.38, -0.38], [-0.38, 0.38], [0.38, 0.38], [0, 0.38]].forEach(([x, z]) => A(mesh(0.16, 0.2, 0.16, c, x, 1.24, z))); }
+    if (k === 'helmet') { const glass = new THREE.Mesh(new THREE.SphereGeometry(0.74, 24, 16), new THREE.MeshLambertMaterial({ color: 0xcfefff, transparent: true, opacity: 0.35 })); glass.position.y = 0.43; A(glass); A(mesh(1.02, 0.14, 1.02, M(0xffffff), 0, -0.02, 0)); }
+    if (w === 'glasses') { const b = M(0x111111); A(mesh(0.3, 0.2, 0.05, b, -0.2, 0.5, 0.45)); A(mesh(0.3, 0.2, 0.05, b, 0.2, 0.5, 0.45)); A(mesh(0.14, 0.05, 0.05, b, 0, 0.53, 0.45)); }
+    if (w === 'mustache') A(mesh(0.44, 0.1, 0.05, M(0x5a3a1a), 0, 0.35, 0.45));
+    if (p === 'backpack') { B(mesh(0.8, 0.85, 0.35, M(0xf28c28), 0, 0.6, -0.48)); B(mesh(0.8, 0.25, 0.38, M(0xc96a10), 0, 0.92, -0.49)); }
+    if (p === 'cape') { const piv = new THREE.Group(); piv.position.set(0, 1.08, -0.33); piv.add(mesh(1.02, 1.45, 0.06, M(0x7b3fe4), 0, -0.72, 0)); B(piv); this.cape = piv; }
+    if (p === 'wings') {
+      const wm = M(0xffffff); this.wings = [-1, 1].map(s => { const piv = new THREE.Group(); piv.position.set(0.15 * s, 0.8, -0.35); piv.add(mesh(1.0, 0.55, 0.06, wm, 0.5 * s, 0.1, 0)); B(piv); return piv; });
+    }
+    if (this.pet) { scene.remove(this.pet.g); this.pet = null; }
+    if (eq.peliharaan) { this.pet = new Pet(eq.peliharaan); this.pet.g.position.set(this.g.position.x + 1.1, 0, this.g.position.z - 1); this.pet.g.visible = this.g.visible; scene.add(this.pet.g); }
+    this.refreshShirt();
+  }
+  setVisible(v) { this.g.visible = v; if (this.pet) this.pet.g.visible = v; }
+  snapPet() { if (this.pet) this.pet.g.position.set(this.g.position.x + 1.1, 0, this.g.position.z + 1); }
+  jump() { if (this.y <= 0.001) { this.vy = 9.5; return true; } return false; }
+  celebrate() { this.celebrateT = 1.4; this.sadT = 0; }
+  sad() { this.sadT = 1.6; this.celebrateT = 0; this.inner.rotation.y = 0; }
+  update(dt) {
+    this.t += dt; const mv = this.speed > 0.1, k = 1 - Math.exp(-14 * dt);
+    const sw = mv ? Math.sin(this.t * 11) * 0.75 * Math.min(1, this.speed) : 0;
+    let aL = sw, aR = -sw, lL = -sw, lR = sw, headX = 0;
+    if (this.celebrateT > 0) {
+      this.celebrateT -= dt; aL = -2.8 + Math.sin(this.t * 14) * 0.3; aR = -2.8 - Math.sin(this.t * 14) * 0.3;
+      this.inner.rotation.y += dt * 9; if (this.celebrateT <= 0) this.inner.rotation.y = 0;
+    } else if (this.sadT > 0) { this.sadT -= dt; headX = 0.45; aL = 0.15; aR = -0.15; }
+    this.armL.rotation.x += (aL - this.armL.rotation.x) * k; this.armR.rotation.x += (aR - this.armR.rotation.x) * k;
+    this.legL.rotation.x += (lL - this.legL.rotation.x) * k; this.legR.rotation.x += (lR - this.legR.rotation.x) * k;
+    this.headG.rotation.x += (headX - this.headG.rotation.x) * k;
+    this.bodyG.scale.y = mv ? 1 : 1 + Math.sin(this.t * 2.6) * 0.025;
+    this.vy -= 26 * dt; this.y += this.vy * dt; if (this.y <= 0) { this.y = 0; this.vy = 0; } this.inner.position.y = this.y;
+    this.g.rotation.y = lerpAngle(this.g.rotation.y, this.rotTarget, 1 - Math.exp(-12 * dt));
+    if (this.cape) this.cape.rotation.x = 0.12 + Math.min(1, this.speed) * 0.55 + Math.sin(this.t * 6) * 0.05;
+    if (this.wings) { const f = 0.5 + Math.sin(this.t * (mv ? 14 : 4)) * 0.35; this.wings[0].rotation.y = -f; this.wings[1].rotation.y = f; }
+    if (this.equipped.jejak && mv && this.g.visible) { this.trailT -= dt; if (this.trailT <= 0) { this.trailT = 0.05; spawnTrail(this); } }
+    if (this.pet) this.pet.update(dt, this);
+  }
+}
+const me = new Character(), remote = new Character();
+me.setColor(COLORS.child); remote.setVisible(false);
+me.g.position.set(0, 0, 4);
+
+/* ===================== Musik latar (dibuat langsung, tanpa file) ===================== */
+const TUNES = {
+  taman: { mel: [72, null, 76, null, 79, null, 76, null, 74, null, 77, null, 81, null, 79, null, 76, null, 79, null, 84, null, 81, 79, 77, null, 74, null, 72, null, null, null], bass: [48, 53, 55, 48, 45, 50, 55, 48], bpm: 116 },
+  pantai: { mel: [67, 69, 72, null, 69, 72, 74, null, 76, null, 74, 72, 69, null, 67, null, 65, 67, 69, null, 72, null, 69, 67, 64, null, 67, null, 60, null, null, null], bass: [43, 48, 45, 41, 43, 48, 41, 43], bpm: 104 },
+  angkasa: { mel: [69, null, null, 72, null, null, 76, null, 74, null, null, 72, null, 69, null, null, 67, null, null, 71, null, null, 74, null, 72, null, 71, null, 69, null, null, null], bass: [45, 45, 41, 41, 43, 43, 40, 40], bpm: 96 },
+};
+const music = {
+  ctx: null, master: null, on: true, started: false, step: 0, next: 0,
+  start() {
+    if (this.started) { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    this.started = true;
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.master = this.ctx.createGain(); this.master.gain.value = this.on ? 0.1 : 0; this.master.connect(this.ctx.destination);
+      this.next = this.ctx.currentTime + 0.1; setInterval(() => this.schedule(), 100);
+    } catch (e) { }
+  },
+  schedule() {
+    const ctx = this.ctx; if (!ctx) return; const tune = TUNES[S.theme] || TUNES.taman, beat = 60 / tune.bpm / 2;
+    while (this.next < ctx.currentTime + 0.3) {
+      const s = this.step % 32, n = tune.mel[s];
+      if (n != null) this.note(n, this.next, beat * 0.9, 'triangle', 0.5);
+      if (s % 4 === 0) this.note(tune.bass[(s / 4) % 8], this.next, beat * 3.6, 'sine', 0.7);
+      this.next += beat; this.step++;
+    }
+  },
+  note(midi, t, dur, type, vol) {
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type; o.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
+  },
+  toggle() { this.on = !this.on; if (this.master) this.master.gain.value = this.on ? 0.1 : 0; $('btnMusic').style.opacity = this.on ? 1 : 0.45; this.start(); },
+};
+
+/* ===================== Kontrol: keyboard, joystick, joypad ===================== */
+const keys = {}; let wantJump = false, jumpFlag = false;
+addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; keys[e.code] = true; if (e.code === 'Space') { wantJump = true; e.preventDefault(); } });
+addEventListener('keyup', e => { keys[e.code] = false; });
+const joy = { x: 0, z: 0, id: null }, joyEl = $('joy'), knob = $('knob');
+function joyMove(e) {
+  const r = joyEl.getBoundingClientRect(); let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+  const max = r.width / 2 - 20, l = Math.hypot(dx, dy); if (l > max) { dx *= max / l; dy *= max / l; }
+  knob.style.transform = `translate(${dx}px,${dy}px)`; joy.x = dx / max; joy.z = -dy / max;
+}
+joyEl.addEventListener('pointerdown', e => { joy.id = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); });
+joyEl.addEventListener('pointermove', e => { if (e.pointerId === joy.id) joyMove(e); });
+const joyEnd = e => { if (e.pointerId !== joy.id) return; joy.id = null; joy.x = joy.z = 0; knob.style.transform = ''; };
+joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
+$('jumpBtn').addEventListener('pointerdown', e => { e.preventDefault(); wantJump = true; });
+const gp = { x: 0, z: 0 }; let gpPrevA = false;
+function pollGamepad() {
+  gp.x = 0; gp.z = 0; const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (const p of pads) {
+    if (!p) continue;
+    let x = p.axes[0] || 0, y = p.axes[1] || 0; if (Math.abs(x) < 0.2) x = 0; if (Math.abs(y) < 0.2) y = 0;
+    const b = i => !!(p.buttons[i] && p.buttons[i].pressed);
+    if (b(14)) x = -1; if (b(15)) x = 1; if (b(12)) y = -1; if (b(13)) y = 1;
+    gp.x = x; gp.z = -y; const a = b(0); if (a && !gpPrevA) wantJump = true; gpPrevA = a; break;
+  }
+}
+function getInput() {
+  let x = 0, z = 0;
+  if (keys.KeyA || keys.ArrowLeft) x -= 1; if (keys.KeyD || keys.ArrowRight) x += 1;
+  if (keys.KeyW || keys.ArrowUp) z += 1; if (keys.KeyS || keys.ArrowDown) z -= 1;
+  x += joy.x + gp.x; z += joy.z + gp.z; const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
+  return { x, z };
+}
+function setCtrl(on) { document.body.classList.toggle('ctrl-on', on && isTouch); }
+
+/* ===================== Warna peran ===================== */
+function applyColors() {
+  const myRole = S.profile ? S.profile.role : 'child';
+  let mine = myRole === 'parent' ? COLORS.parent : COLORS.child, theirs = null;
+  if (net.remote) {
+    const rr = net.remote.role; theirs = rr === 'parent' ? COLORS.parent : COLORS.child;
+    if (rr === myRole) { const alt = myRole === 'parent' ? COLORS.parent2 : COLORS.child2; if (net.isHost) theirs = alt; else mine = alt; }
+  }
+  S.myColor = mine; S.oppColor = theirs;
+  me.setColor(mine); if (S.profile) me.setLabel(S.profile.name, mine);
+  if (theirs !== null) { remote.setColor(theirs); remote.setLabel(net.remote.name, theirs); remote.setOutfit(net.remote.role === 'child' ? (net.remote.equipped || {}) : {}); }
+}
+
+/* ===================== Online (PeerJS) ===================== */
+function send(m) { try { if (net.conn && net.conn.open) net.conn.send(m); } catch (e) { } }
+function publicProfile() { const p = S.profile; return { name: p.name, role: p.role, equipped: p.role === 'child' ? p.equipped : {} }; }
+function sendLobby() { if (net.isHost) send({ t: 'lobby', level: S.level, theme: S.theme, handicap: S.handicap }); }
+function leaveNet() {
+  try { if (net.conn) net.conn.close(); } catch (e) { }
+  try { if (net.peer) net.peer.destroy(); } catch (e) { }
+  net.peer = null; net.conn = null; net.remote = null; net.isHost = false; net.code = '';
+  remote.setVisible(false); if (S.profile) applyColors();
+}
+function setupConn(c) {
+  c.on('open', () => { net.conn = c; c.send({ t: 'hello', p: publicProfile() }); });
+  c.on('data', onMsg);
+  c.on('close', () => { if (net.conn === c) { net.conn = null; onDisconnect(); } });
+  c.on('error', () => { });
+}
+let createTries = 0;
+function createRoom() {
+  if (typeof Peer === 'undefined') { toast('Mode online butuh internet. Coba muat ulang halaman.'); return; }
+  const code = String(rnd(1000, 9999));
+  const peer = new Peer(CONFIG.ROOM_PREFIX + code);
+  peer.on('open', () => { createTries = 0; net.peer = peer; net.isHost = true; net.code = code; enterLobby(); });
+  peer.on('connection', c => {
+    if (net.conn && net.conn.open) { c.on('open', () => { c.send({ t: 'full' }); setTimeout(() => c.close(), 500); }); return; }
+    setupConn(c);
+  });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id' && createTries++ < 5) { peer.destroy(); createRoom(); return; }
+    if (net.peer !== peer) { createTries = 0; toast('Gagal membuat room (' + e.type + '). Cek internet.'); try { peer.destroy(); } catch (x) { } return; }
+    if (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error') toast('Koneksi ke server room terputus');
+  });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) { } });
+}
+let joinTimer;
+function joinRoom(code) {
+  if (typeof Peer === 'undefined') { toast('Mode online butuh internet. Coba muat ulang halaman.'); return; }
+  leaveNet(); if (document.activeElement) document.activeElement.blur();
+  const peer = new Peer(); net.peer = peer; net.isHost = false; net.code = code;
+  $('joinErr').textContent = 'Menghubungkan...';
+  peer.on('open', () => { setupConn(peer.connect(CONFIG.ROOM_PREFIX + code, { reliable: true })); });
+  peer.on('error', e => {
+    if (net.peer !== peer) return;
+    clearTimeout(joinTimer);
+    $('joinErr').textContent = e.type === 'peer-unavailable' ? 'Room tidak ditemukan. Cek lagi kodenya.' : 'Gagal terhubung (' + e.type + ')';
+    leaveNet();
+  });
+  clearTimeout(joinTimer);
+  joinTimer = setTimeout(() => { if (net.peer === peer && !net.remote) { $('joinErr').textContent = 'Tidak ada jawaban. Cek kode dan internet.'; leaveNet(); } }, 15000);
+}
+function onDisconnect() {
+  if (!S.profile) return;
+  if (net.isHost && (S.mode === 'lobby' || S.mode === 'result')) { net.remote = null; remote.setVisible(false); applyColors(); if (S.mode === 'lobby') renderLobby(); toast('Lawan keluar dari room'); return; }
+  if (S.mode === 'play' || S.mode === 'lobby' || S.mode === 'result') { toast('Lawan keluar dari room'); S.game = null; enterMenu(); }
+}
+const remoteTarget = new THREE.Vector3(); let remoteRot = Math.PI;
+function applySettings(m) {
+  S.level = Math.min(LEVELS.length, Math.max(1, Math.floor(m.level) || 1));
+  S.handicap = HANDICAP[m.handicap] !== undefined ? m.handicap : 'sedang';
+  if (THEMES[m.theme] && S.theme !== m.theme) { S.theme = m.theme; buildTheme(S.theme); }
+}
+function onMsg(m) {
+  if (!m || typeof m !== 'object') return;
+  switch (m.t) {
+    case 'hello': {
+      const p = m.p || {};
+      net.remote = { name: String(p.name || 'Lawan').slice(0, 16), role: p.role === 'parent' ? 'parent' : 'child', equipped: (p.equipped && typeof p.equipped === 'object') ? p.equipped : {} };
+      clearTimeout(joinTimer); applyColors(); remote.setVisible(true);
+      if (net.isHost) { sendLobby(); if (S.mode === 'lobby') renderLobby(); toast(net.remote.name + ' bergabung!'); }
+      else enterLobby();
+      break;
+    }
+    case 'lobby':
+      if (!net.isHost) { applySettings(m); if (S.mode === 'lobby') renderLobby(); }
+      break;
+    case 'start':
+      if (!net.isHost && Array.isArray(m.qs) && m.qs.length) {
+        applySettings(m);
+        beginGame(m.qs.slice(0, 50).map(q => ({ text: String(q.text).slice(0, 80), ans: q.ans === 'BENAR' ? 'BENAR' : 'SALAH' })));
+      }
+      break;
+    case 'stage': if (!net.isHost && S.game) startStage(m.i); break;
+    case 'pos':
+      remoteTarget.set(+m.x || 0, 0, +m.z || 0); remoteRot = +m.r || 0; remote.speed = +m.s || 0; if (m.j) remote.jump();
+      break;
+    case 'answer': if (net.isHost && S.game) { S.game.oppAns[m.i] = m.ans === 'BENAR' ? 'BENAR' : 'SALAH'; tryResolve(m.i); } break;
+    case 'result': if (!net.isHost && S.game) applyResult(m); break;
+    case 'end': if (!net.isHost && S.game) finishGame(); break;
+    case 'leave': onDisconnect(); break;
+    case 'full': $('joinErr').textContent = 'Room sudah penuh.'; leaveNet(); break;
+  }
+}
+
+/* ===================== Layar & alur ===================== */
+function pickRole(r) { S.pickRole = r; $('roleParent').classList.toggle('sel', r === 'parent'); $('roleChild').classList.toggle('sel', r === 'child'); me.setColor(r === 'parent' ? COLORS.parent : COLORS.child); }
+async function doLogin() {
+  const err = t => { $('loginErr').textContent = t; };
+  const name = $('inName').value.trim().replace(/\s+/g, ' ').slice(0, 16), kode = $('inKode').value.trim().toUpperCase().slice(0, 20);
+  if (!S.pickRole) return err('Pilih Orang Tua atau Anak dulu');
+  if (!name) return err('Isi nama panggilan');
+  if (!kode) return err('Isi kode keluarga');
+  music.start();
+  const p = { name, kode, role: S.pickRole, level: 1, wallet: 0, owned: [], equipped: {} };
+  loadLocal(p);
+  err(''); $('btnLogin').disabled = true; $('btnLogin').textContent = 'Memeriksa...';
+  const res = await api('login', { kode, nama: name, peran: p.role === 'parent' ? 'Orang Tua' : 'Anak' });
+  $('btnLogin').disabled = false; $('btnLogin').textContent = 'Masuk';
+  if (res && res.ok === false) return err(res.error === 'kode' ? 'Kode keluarga tidak dikenal' : 'Gagal masuk, coba lagi');
+  if (res && res.ok && res.pemain && p.role === 'child') {
+    p.level = Math.max(1, Math.min(LEVELS.length, Number(res.pemain.level) || 1)); p.wallet = Math.max(0, Number(res.pemain.poin) || 0);
+    const kol = Array.isArray(res.pemain.koleksi) ? res.pemain.koleksi : [];
+    p.owned = kol.map(k => k.barang).filter(id => ITEM[id]); p.equipped = {};
+    kol.filter(k => k.dipakai && ITEM[k.barang]).forEach(k => { p.equipped[ITEM[k.barang].slot] = k.barang; });
+  }
+  if (p.role === 'parent') { p.level = LEVELS.length; p.owned = []; p.equipped = {}; }
+  if (!CONFIG.APPS_SCRIPT_URL) toast('Mode offline: data tersimpan di perangkat ini saja', 3500);
+  if (document.activeElement) document.activeElement.blur();
+  S.profile = p; saveLocal(); enterMenu();
+}
+function enterMenu() {
+  S.mode = 'menu'; S.game = null; leaveNet(); applyColors();
+  const p = S.profile; me.setOutfit(p.role === 'child' ? p.equipped : {}); remote.setVisible(false);
+  $('menuHello').textContent = `Halo, ${p.name}! ${p.role === 'parent' ? '🔵' : '🔴'}`;
+  $('menuWallet').textContent = p.role === 'child' ? `⭐ Tabungan ${fmt(p.wallet)} poin · Level ${p.level} terbuka` : 'Orang Tua · semua level terbuka';
+  $('kidRow').style.display = p.role === 'child' ? 'flex' : 'none';
+  $('hud').classList.remove('on'); setCtrl(false); $('btnExit').style.display = 'none'; bigHide(); show('sMenu');
+}
+const maxLevelForMe = () => S.profile.role === 'child' ? S.profile.level : LEVELS.length;
+function enterLobby() {
+  S.mode = 'lobby'; S.game = null;
+  if ((net.isHost || !net.peer) && S.level > maxLevelForMe()) S.level = maxLevelForMe();
+  $('hud').classList.remove('on'); setCtrl(false); $('btnExit').style.display = 'none'; bigHide();
+  renderLobby(); show('sLobby'); if (net.isHost) sendLobby();
+}
+function chip(text, sel, disabled, onclick) { const b = document.createElement('button'); b.className = 'chip' + (sel ? ' sel' : ''); b.textContent = text; b.disabled = disabled; b.onclick = onclick; return b; }
+function renderLobby() {
+  const solo = !net.peer, host = solo || net.isHost, p = S.profile;
+  $('lobbyTitle').textContent = solo ? '🎯 Main Solo' : 'Room ' + net.code;
+  $('lobbyCode').textContent = net.isHost ? net.code : '';
+  $('lobbyCode').style.display = $('lobbyCodeHint').style.display = (net.isHost && !net.remote) ? 'block' : 'none';
+  const pl = $('lobbyPlayers'); pl.innerHTML = '';
+  const tag = (name, color) => { const s = document.createElement('span'); s.className = 'ptag'; s.textContent = name; s.style.background = css(color); pl.appendChild(s); };
+  tag(p.name + ' (kamu)', S.myColor);
+  if (!solo) { if (net.remote) tag(net.remote.name, S.oppColor); else { const s = document.createElement('span'); s.className = 'ptag wait'; s.textContent = 'menunggu lawan...'; pl.appendChild(s); } }
+  const lv = $('chipLevel'); lv.innerHTML = '';
+  LEVELS.forEach(L => lv.appendChild(chip((L.n > maxLevelForMe() && host ? '🔒 ' : '') + 'Level ' + L.n, S.level === L.n, !host || L.n > maxLevelForMe(), () => { S.level = L.n; sendLobby(); renderLobby(); })));
+  $('levelInfo').textContent = LEVELS[S.level - 1].title;
+  const th = $('chipTheme'); th.innerHTML = '';
+  Object.entries(THEMES).forEach(([k, label]) => th.appendChild(chip(label, S.theme === k, !host, () => { if (S.theme !== k) { S.theme = k; buildTheme(k); } sendLobby(); renderLobby(); })));
+  const showHc = !solo && net.remote && net.remote.role !== p.role;
+  $('hcWrap').style.display = showHc ? 'block' : 'none';
+  const hc = $('chipHc'); hc.innerHTML = '';
+  Object.keys(HANDICAP).forEach(k => hc.appendChild(chip(HC_LABEL[k], S.handicap === k, !host, () => { S.handicap = k; sendLobby(); renderLobby(); })));
+  $('btnStart').style.display = host ? 'block' : 'none';
+  $('btnStart').disabled = !solo && !net.remote;
+  $('lobbyInfo').textContent = solo ? `${CONFIG.STAGES} stage · benar +1, salah −0,5 · naik level jika ${CONFIG.NAIK_LEVEL_MIN} benar`
+    : host ? (net.remote ? 'Pilih level dan tema, lalu tekan Mulai.' : 'Minta lawan menekan Gabung dan memasukkan kode di atas.')
+      : 'Menunggu pembuat room menekan Mulai...';
+}
+
+/* ===================== Permainan ===================== */
+function startPos(isHostSide, role) {
+  const race = isRace(); const x = race ? (isHostSide ? -2 : 2) : 0; let z = 6;
+  if (race && net.remote.role !== S.profile.role && role === 'parent') z += HANDICAP[S.handicap] || 0;
+  return { x, z };
+}
+async function hostStart() {
+  $('btnStart').disabled = true; $('btnStart').textContent = 'Menyiapkan soal...';
+  const qs = await makeQuestions(S.level);
+  $('btnStart').disabled = false; $('btnStart').textContent = 'Mulai!';
+  if (net.peer && !isRace()) { toast('Lawan belum bergabung'); return; }
+  if (isRace()) send({ t: 'start', level: S.level, theme: S.theme, handicap: S.handicap, qs });
+  beginGame(qs); startStage(0);
+}
+function beginGame(qs) {
+  S.game = { qs, i: -1, phase: 'idle', my: { total: 0, correct: 0 }, opp: { total: 0, correct: 0 }, hostAns: {}, oppAns: {}, resolved: -1, locked: true, lockT: 0, cd: 0, lastCd: 0, showT: 0, race: isRace() };
+  S.mode = 'play'; show(null); $('hud').classList.add('on'); setCtrl(true); $('btnExit').style.display = 'inline-block';
+  $('qtext').textContent = 'Siap-siap...'; $('qsub').textContent = ''; remote.setVisible(isRace()); updateStats();
+}
+function startStage(i) {
+  const G = S.game; if (!G || !G.qs[i]) return;
+  G.i = i; G.locked = false; G.lockT = 0; G.phase = 'countdown'; G.cd = 3; G.lastCd = 0;
+  const a = startPos(net.isHost || !G.race, S.profile.role);
+  me.g.position.set(a.x, 0, a.z); me.rotTarget = Math.PI; me.g.rotation.y = Math.PI; me.speed = 0; me.snapPet();
+  if (G.race) { const b = startPos(!net.isHost, net.remote.role); remote.g.position.set(b.x, 0, b.z); remoteTarget.set(b.x, 0, b.z); remote.g.rotation.y = remoteRot = Math.PI; remote.speed = 0; remote.snapPet(); }
+  const q = G.qs[i]; $('qtext').textContent = q.text; $('qtext').classList.toggle('long', q.text.length > 20);
+  $('qsub').textContent = 'Benar atau salah? Lari ke kotaknya!'; $('lockbar').style.display = 'none';
+  updateStats(); if (net.isHost && G.race) send({ t: 'stage', i });
+}
+function updateStats() {
+  const G = S.game; if (!G) return;
+  $('stStage').textContent = `Stage ${Math.max(1, G.i + 1)}/${G.qs.length}`;
+  const sm = $('stMe'); sm.textContent = `${S.profile.name}: ${fmt(G.my.total)}`; sm.style.background = css(S.myColor); sm.style.color = '#fff';
+  const so = $('stOpp');
+  if (G.race && net.remote) { so.style.display = ''; so.textContent = `${net.remote.name}: ${fmt(G.opp.total)}`; so.style.background = css(S.oppColor); so.style.color = '#fff'; }
+  else { so.style.display = ''; so.textContent = `✔ ${G.my.correct} benar`; so.style.background = '#fffffff2'; so.style.color = ''; }
+}
+function lock(ans) {
+  const G = S.game; G.locked = true; me.speed = 0; $('lockbar').style.display = 'none';
+  if (!G.race) { const c = G.qs[G.i].ans, ok = ans === c; applyResult({ i: G.i, correct: c, h: { ok, delta: ok ? CONFIG.POIN_BENAR : CONFIG.POIN_SALAH } }); }
+  else if (net.isHost) { G.hostAns[G.i] = ans; $('qsub').textContent = 'Menunggu lawan memilih...'; tryResolve(G.i); }
+  else { send({ t: 'answer', i: G.i, ans }); $('qsub').textContent = 'Menunggu lawan memilih...'; }
+}
+function tryResolve(i) {
+  const G = S.game; if (!G || G.resolved === i || i !== G.i) return;
+  const ha = G.hostAns[i], ga = G.oppAns[i]; if (ha === undefined || ga === undefined) return;
+  G.resolved = i; const c = G.qs[i].ans;
+  const mk = a => { const ok = a === c; return { ok, delta: ok ? CONFIG.POIN_BENAR : CONFIG.POIN_SALAH }; };
+  const m = { t: 'result', i, correct: c, h: mk(ha), g: mk(ga) }; send(m); applyResult(m);
+}
+function applyResult(m) {
+  const G = S.game; if (!G) return;
+  const mine = (net.isHost || !G.race) ? m.h : m.g, opp = G.race ? (net.isHost ? m.g : m.h) : null;
+  G.my.total += mine.delta; if (mine.ok) G.my.correct++;
+  if (opp) { G.opp.total += opp.delta; if (opp.ok) G.opp.correct++; }
+  if (S.profile.role === 'child') { S.profile.wallet = Math.max(0, S.profile.wallet + mine.delta); saveLocal(); }
+  mine.ok ? me.celebrate() : me.sad(); if (opp) (opp.ok ? remote.celebrate() : remote.sad());
+  bigShow(mine.ok ? '✔ Benar!' : '✘ Salah', `${fmtDelta(mine.delta)} poin · jawabannya ${m.correct}`, mine.ok ? '#3ddc6e' : '#ff5a5a', 2100);
+  $('qsub').textContent = 'Jawaban yang tepat: ' + m.correct;
+  G.locked = true; G.phase = 'show'; G.showT = 2.3; updateStats();
+}
+function nextOrEnd() {
+  const G = S.game; if (!G) return;
+  if (G.i + 1 < G.qs.length) startStage(G.i + 1);
+  else { if (G.race) send({ t: 'end' }); finishGame(); }
+}
+function finishGame() {
+  const G = S.game; if (!G) return; const p = S.profile;
+  S.mode = 'result'; $('hud').classList.remove('on'); setCtrl(false); $('btnExit').style.display = 'none'; bigHide();
+  let unlocked = false;
+  if (p.role === 'child' && G.my.correct >= CONFIG.NAIK_LEVEL_MIN && S.level === p.level && p.level < LEVELS.length) { p.level++; unlocked = true; }
+  if (p.role === 'child') savePlayer();
+  let title, juara;
+  if (G.race) {
+    const a = G.my.total, b = G.opp.total;
+    if (a > b) { title = '🏆 Kamu juara!'; juara = p.name; } else if (b > a) { title = '🏆 Juara: ' + net.remote.name; juara = net.remote.name; } else { title = '🤝 Seri!'; juara = 'Seri'; }
+    a >= b ? me.celebrate() : me.sad(); b >= a ? remote.celebrate() : remote.sad();
+  } else { title = G.my.correct >= CONFIG.NAIK_LEVEL_MIN ? '🎉 Hebat!' : '💪 Ayo coba lagi!'; juara = p.name; }
+  $('resTitle').textContent = title;
+  const row = (name, color, d) => `<div class="res" style="background:${css(color)}"><span>${esc(name)}</span><span>✔ ${d.correct}/${G.qs.length} · ${fmt(d.total)} poin</span></div>`;
+  let html = row(p.name, S.myColor, G.my);
+  if (G.race && net.remote) html += row(net.remote.name, S.oppColor, G.opp);
+  if (unlocked) html += `<div class="note">🔓 Level ${p.level} terbuka!</div>`;
+  else if (p.role === 'child' && S.level === p.level && p.level < LEVELS.length) html += `<p class="muted">Butuh ${CONFIG.NAIK_LEVEL_MIN} jawaban benar untuk membuka level berikutnya.</p>`;
+  if (p.role === 'child') html += `<p class="wallet">⭐ Tabungan: ${fmt(p.wallet)} poin</p>`;
+  $('resBody').innerHTML = html;
+  if (net.isHost || !G.race) api('riwayat', { kode: p.kode, room: G.race ? net.code : 'SOLO', pemain1: p.name, pemain2: G.race ? net.remote.name : '-', level: S.level, poin1: G.my.total, poin2: G.race ? G.opp.total : '', juara });
+  if (unlocked && (net.isHost || !G.race)) S.level = p.level;
+  $('btnAgain').textContent = G.race && !net.isHost ? 'Kembali ke Lobi' : 'Main Lagi';
+  S.game = null; show('sResult');
+}
+function quitGame() {
+  if (!confirm('Keluar dari permainan?')) return;
+  if (net.peer) send({ t: 'leave' });
+  S.game = null; enterMenu();
+}
+
+/* ===================== Toko & Lemari ===================== */
+function renderShop() {
+  const p = S.profile; $('shopWallet').textContent = `⭐ Tabungan: ${fmt(p.wallet)} poin`;
+  const g = $('shopGrid'); g.innerHTML = '';
+  SHOP.forEach(it => {
+    const own = p.owned.includes(it.id), d = document.createElement('div');
+    d.className = 'item' + (own ? ' eq' : '');
+    d.innerHTML = `<div class="ic">${it.icon}</div><div class="nm">${esc(it.name)}</div><div class="pr">${it.price} poin</div>`;
+    const b = document.createElement('button'); b.className = 'btn ' + (own ? 'gray' : 'green');
+    b.textContent = own ? 'Dimiliki ✔' : (p.wallet < it.price ? `Kurang ${fmt(it.price - p.wallet)}` : 'Beli');
+    b.disabled = own || p.wallet < it.price; b.onclick = () => buy(it); d.appendChild(b); g.appendChild(d);
+  });
+}
+function buy(it) {
+  const p = S.profile; if (p.owned.includes(it.id) || p.wallet < it.price) return;
+  p.wallet = Math.max(0, p.wallet - it.price); p.owned.push(it.id); p.equipped[it.slot] = it.id;
+  me.setOutfit(p.equipped); me.celebrate(); savePlayer(); toast(`${it.icon} ${it.name} langsung dipakai!`); renderShop();
+}
+function renderWardrobe() {
+  const p = S.profile, g = $('wardGrid'); g.innerHTML = '';
+  if (!p.owned.length) { g.innerHTML = '<p class="muted">Belum ada barang. Kumpulkan poin lalu beli di Toko!</p>'; return; }
+  p.owned.forEach(id => {
+    const it = ITEM[id]; if (!it) return; const on = p.equipped[it.slot] === id, d = document.createElement('div');
+    d.className = 'item' + (on ? ' eq' : '');
+    d.innerHTML = `<div class="ic">${it.icon}</div><div class="nm">${esc(it.name)}</div><div class="pr">${on ? 'Dipakai ✔' : 'Ketuk untuk pakai'}</div>`;
+    d.onclick = () => { if (on) delete p.equipped[it.slot]; else p.equipped[it.slot] = id; me.setOutfit(p.equipped); savePlayer(); renderWardrobe(); };
+    g.appendChild(d);
+  });
+}
+
+/* ===================== Tombol ===================== */
+$('roleParent').onclick = () => pickRole('parent');
+$('roleChild').onclick = () => pickRole('child');
+$('btnLogin').onclick = doLogin;
+$('inKode').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+$('btnSolo').onclick = () => { leaveNet(); enterLobby(); };
+$('btnCreate').onclick = () => { leaveNet(); toast('Membuat room...'); createRoom(); };
+$('btnJoinMenu').onclick = () => { $('joinErr').textContent = ''; $('inRoom').value = ''; show('sJoin'); };
+$('btnJoin').onclick = () => { const c = $('inRoom').value.replace(/\D/g, ''); if (c.length !== 4) { $('joinErr').textContent = 'Kodenya 4 angka'; return; } joinRoom(c); };
+$('inRoom').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnJoin').click(); });
+$('btnJoinBack').onclick = () => { clearTimeout(joinTimer); enterMenu(); };
+$('btnStart').onclick = hostStart;
+$('btnLobbyBack').onclick = () => { if (net.peer) send({ t: 'leave' }); enterMenu(); };
+$('btnAgain').onclick = () => { if (net.peer && !net.remote && !net.isHost) enterMenu(); else enterLobby(); };
+$('btnResMenu').onclick = () => { if (net.peer) send({ t: 'leave' }); enterMenu(); };
+$('btnShop').onclick = () => { renderShop(); show('sShop'); };
+$('btnWardrobe').onclick = () => { renderWardrobe(); show('sWardrobe'); };
+$('btnShopBack').onclick = enterMenu; $('btnWardBack').onclick = enterMenu;
+$('btnLogout').onclick = () => { leaveNet(); S.profile = null; S.mode = 'login'; me.label.visible = false; me.setOutfit({}); show('sLogin'); };
+$('btnMusic').onclick = () => music.toggle();
+$('btnExit').onclick = quitGame;
+try { const last = JSON.parse(localStorage.getItem('lbs_last') || 'null'); if (last) { $('inName').value = last.name || ''; $('inKode').value = last.kode || ''; if (last.role) pickRole(last.role); } } catch (e) { }
+
+/* ===================== Loop utama ===================== */
+const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), desired = new THREE.Vector3(), look = new THREE.Vector3(0, 0.3, 4);
+let last = performance.now(), posT = 0;
+function updatePlay(dt) {
+  const G = S.game; if (!G) return;
+  if (G.phase === 'countdown') {
+    G.cd -= dt; const n = Math.ceil(G.cd);
+    if (n !== G.lastCd && n > 0) { G.lastCd = n; bigShow(String(n)); }
+    if (G.cd <= 0) { G.phase = 'run'; bigShow('Mulai!', '', '#ffd43b', 600); }
+  }
+  const canMove = G.phase === 'run' && !G.locked;
+  const inp = canMove ? getInput() : { x: 0, z: 0 }, sp = Math.hypot(inp.x, inp.z);
+  if (sp > 0.05) {
+    me.g.position.x = Math.max(-12, Math.min(12, me.g.position.x + inp.x * CONFIG.SPEED * dt));
+    me.g.position.z = Math.max(-11, Math.min(13, me.g.position.z - inp.z * CONFIG.SPEED * dt));
+    me.rotTarget = Math.atan2(inp.x, -inp.z);
+  }
+  me.speed = sp;
+  if (wantJump) { wantJump = false; if (me.jump()) jumpFlag = true; }
+  const cur = padAt(me.g.position);
+  if (canMove) {
+    if (cur && me.y < 0.05) { G.lockT += dt; if (G.lockT >= CONFIG.LOCK_TIME) lock(cur); }
+    else G.lockT = Math.max(0, G.lockT - dt * 2);
+    $('lockbar').style.display = G.lockT > 0 && !G.locked ? 'block' : 'none';
+    $('lockfill').style.width = Math.min(100, G.lockT / CONFIG.LOCK_TIME * 100) + '%';
+  }
+  for (const k in padObjs) padObjs[k].userData.top.emissive.setHex(cur === k && G.phase !== 'show' ? 0x333333 : 0x000000);
+  if (G.phase === 'show') { G.showT -= dt; if (G.showT <= 0) { G.phase = 'idle'; if (!G.race || net.isHost) nextOrEnd(); } }
+  if (G.race) {
+    remote.g.position.lerp(remoteTarget, 1 - Math.exp(-15 * dt)); remote.rotTarget = remoteRot;
+    posT -= dt; if (posT <= 0) { posT = 0.066; send({ t: 'pos', x: +me.g.position.x.toFixed(2), z: +me.g.position.z.toFixed(2), r: +me.rotTarget.toFixed(2), s: +me.speed.toFixed(2), j: jumpFlag }); jumpFlag = false; }
+  }
+  const p = me.g.position, tx = p.x * 0.5;
+  desired.set(tx, 13, p.z + 11); camera.position.lerp(desired, 1 - Math.exp(-4 * dt));
+  look.lerp(tmp.set(tx, 0, p.z - 8), 1 - Math.exp(-4 * dt)); camera.lookAt(look);
+}
+function updateShowcase(dt) {
+  S.showT += dt; const both = (S.mode === 'lobby' || S.mode === 'result') && !!net.remote;
+  me.g.position.lerp(tmp.set(both ? -1.4 : 0, 0, 4), 1 - Math.exp(-6 * dt)); me.rotTarget = Math.sin(S.showT * 0.6) * 0.35; me.speed = 0;
+  remote.setVisible(both);
+  if (both) { remote.g.position.lerp(tmp2.set(1.4, 0, 4), 1 - Math.exp(-6 * dt)); remote.rotTarget = -Math.sin(S.showT * 0.6) * 0.35; remote.speed = 0; }
+  if (wantJump) { wantJump = false; me.jump(); }
+  for (const k in padObjs) padObjs[k].userData.top.emissive.setHex(0);
+  desired.set(Math.sin(S.showT * 0.25) * 1.2, 2.6, 10.5); camera.position.lerp(desired, 1 - Math.exp(-3 * dt));
+  look.lerp(tmp.set(0, 0.3, 4), 1 - Math.exp(-3 * dt)); camera.lookAt(look);
+}
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  pollGamepad();
+  if (S.mode === 'play') updatePlay(dt); else updateShowcase(dt);
+  me.update(dt); if (remote.g.visible) remote.update(dt);
+  updateParticles(dt);
+  renderer.render(scene, camera);
+}
+
+try { await document.fonts.ready; } catch (e) { }
+buildPads(); buildTheme(S.theme);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
